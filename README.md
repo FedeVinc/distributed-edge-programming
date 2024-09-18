@@ -36,7 +36,7 @@ aiding in root cause analysis.
   
 
 
-The **Jaeger** data model is compatible with OpenTracing – which is a specification that defines how the collected 
+The **Jaeger data model** is compatible with **OpenTracing** – which is a specification that defines how the collected 
 tracing data would look, as well as libraries of implementations in different languages. 
 
 As in most distributed tracing systems, Jaeger works with "_span_" and "_traces_", as defined in the OpenTracing specification.
@@ -49,7 +49,7 @@ Once an operation is completed, the _parent span_ references the next _child spa
 acyclic graph of spans). Traces specify how requests are propagated through our services and other components.
 All spans in a trace share the same ID.
 
-<img src="images/Trace_and_span.png" alt="Span and Trace" width="400"/>
+<img src="images/Span_and_trace.png" alt="Span and Trace" width="400"/>
 
 
 ## Jaeger Architecture
@@ -73,7 +73,7 @@ The main modules are:
 
 - **Backend storage**: component that handles the storage of data collected by Jaeger. Trace data is stored in either 
 SQL or NoSQL databases, depending on the needs. Notable NoSQL options include *Cassandra* and *ElasticSearch*. 
-Cassandra is a highly scalable and handles large amounts of data across multiple servers without a single point of failure. 
+Cassandra is highly scalable and handles large amounts of data across multiple servers without a single point of failure. 
 ElasticSearch is used for real-time search and analysis, storing data in JSON format and supporting efficient full-text searches 
 and complex queries.
 
@@ -133,27 +133,54 @@ all operations will be shown.
 
 
 
+### Traces visualization
+Once we have chosen the service we are interested in, we will be able to view the traces in more detail.
+
+![schema](images/trace_visualization.webp)
 
 
 ### Maven dependencies
+As mentioned before, Jaeger clients are now deprecated, so the recommended approach is to use the **OpenTelemetry SDK** in 
+your preferred programming language, along with a **Jaeger exporter**.
+This allows the spans you create to be converted into a format that Jaeger can process, passing through to the Jaeger 
+collector and then to the storage backend.
 
+Assuming we want to develop a simple Spring Boot application configured to use OpenTelemetry with the Jaeger exporter 
+for traceability, then we will first need to update the dependencies in the ```pom.xml``` file
 ```
 <dependency>
-    <groupId>io.opentracing.contrib</groupId>
-    <artifactId>opentracing-spring-jaeger-web-starter</artifactId>
-    <version>3.3.1</version>
+	<groupId>io.opentelemetry</groupId>
+	<artifactId>opentelemetry-exporter-jaeger</artifactId>
+	<version>1.34.0</version> 
+</dependency>
+<dependency>
+    <groupId>io.opentelemetry</groupId>
+    <artifactId>opentelemetry-sdk</artifactId>
+	<version>1.42.0</version> 
 </dependency>
 ```
 
 
+### Service code
+Then we'll need to configure OpenTelemetry and Jaeger in the ```Application.java``` file.
 
-### Traces visualization
-Once we have chosen the service we are interested in, we will be able to view the tracks in more detail.
+```
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.exporter.jaeger.JaegerGrpcSpanExporter;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
+```
+Here is a brief explanation of the libraries (in order):
+- This import allows you to work with ```Span``` objects.
+- This import is for the ```Tracer``` interface.
+- Export spans collected by OpenTelemetry to Jaeger.
+- It's used to configure and set up the OpenTelemetry SDK for your application. 
+- This is the provider that manages ```Tracers```. It takes care of creating and configuring 
+the tracers, establishing how the spans are collected and sent to the exporter.
+- ```BatchSpanProcessor``` is a span processor that collects spans in batches and exports them periodically.
 
-![schema](images/trace_visualization.webp)
-From the preceding screenshot, we can see a *trace visualization* from Jaeger, representing the flow of a single request 
-as it passes through multiple services in a distributed system. On the left side, we have the hierarchy of services and 
-their associated operations.
 
 
 
@@ -196,3 +223,4 @@ More info on Jaeger sampling can be found [here](https://www.jaegertracing.io/do
 ## Resources
 ___
 - https://www.jaegertracing.io/
+- https://opentelemetry.io/
